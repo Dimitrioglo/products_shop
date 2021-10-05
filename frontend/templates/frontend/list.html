@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home Products</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
+          integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+
+<div class="container">
+    <form action="{% url 'products-api' %}" base_url="{% url 'products-api' %}" id="form-wrapper" method="POST">
+        <input type="hidden" id="element-id" name="element-id" class="form-control col-sm-2"><br>
+        <label for="fname">Enter product name:</label>
+        <input type="text" id="fname" name="fname" class="form-control col-sm-2"><br>
+        <label for="lprice">Enter product price:</label>
+        <input type="text" id="lprice" name="lprice" class="form-control col-sm-2">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" value="" id="calc-percentage">
+          <label class="form-check-label" for="calc-percentage">
+            calculate %
+          </label>
+        </div><br>
+        <label for="description">Enter product description:</label><br>
+        <textarea id="description" class="form-control" placeholder="Enter text here..."></textarea><br>
+        <input type="submit" value="Submit" class="btn btn-primary">
+        <button type="button" class="btn btn-warning">Clear</button>
+    </form>
+    <br>
+    <h2 class="text-left">List of products:</h2>
+    <div id="list-wrapper">
+
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
+        integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha512-Ah5hWYPzDsVHf9i2EejFBFrG2ZAPmpu4ZJtW4MfSgpZacn+M9QHDt+Hd/wL1tEkk1UgbzqepJr6KnhZjFKB+0A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script type="text/javascript">
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            let cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                let cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+
+    $(document).on('click', '.btn-warning', function (e) {
+        $(this).parent()[0].reset()
+        $(this).parent().find('[type="hidden"]').val('')
+        $('#form-wrapper').attr('action', $('#form-wrapper').attr('base_url'))
+        $('#form-wrapper').attr('method', 'POST')
+    })
+
+
+    $(document).on('click', '.btn-secondary', function (e) {
+        let id_ = $(this).parent().data('id')
+        let name = $(this).parent().find('.list-name').text()
+        let price = $(this).parent().find('.list-price').text()
+        let description = $(this).parent().find('.list-description').text()
+
+        let form = $('#form-wrapper')
+        form.attr('method', 'PUT')
+        form.attr('action', form.attr('base_url') + id_ + '/')
+        form.find('#fname').val(name)
+        form.find('#element-id').val(id_)
+        form.find('#lprice').val(price)
+        form.find('#description').val(description)
+        window.scrollTo(0, 0);
+    });
+
+    $(document).on('click', '.btn-danger', function (e) {
+        let id_ = $(this).parent().data('id')
+        let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
+        $.ajax({
+            url: url,
+            method: "DELETE",
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            success: function (data) {
+                ReadList()
+            }
+        })
+    });
+
+    $(document).on('submit', '#form-wrapper', function (e) {
+        e.preventDefault();
+        let form = $(this)
+        let name = form.find('#fname').val()
+        let lprice = form.find('#lprice').val()
+        let description = form.find('#description').val()
+        let url = form.attr('action');
+        let method = form.attr('method')
+        let id_ = form.find('#element-id').val()
+        let calc_percentage = $('#calc-percentage').is(':checked');
+
+        $.ajax({
+            url: url,
+            method: method,
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            data: {
+                name: name,
+                price: lprice,
+                description: description,
+                calc_percentage: calc_percentage,
+            },
+            success: function (data) {
+                let elem = $('#data-row-' + data.id)
+                elem.remove()
+                let wrapper = $('#list-wrapper')
+                let new_div = gen_element(data.id, data.name, data.price, data.description)
+                wrapper.html(new_div + wrapper.html())
+                $('#form-wrapper').find('#element-id').val(data.id)
+            }
+        })
+    });
+
+    ReadList()
+
+    function gen_element(id, name, price, description) {
+        return `<div id="data-row-${id}" data-id="${id}">
+								<span class="list-name">${name}</span><br>
+								Price: <span class="list-price">${price}</span><br>
+								Description: <span class="list-description">${description}</span><br>
+								<button type="button" class="btn btn-danger">Delete</button>
+								<button type="button" class="btn btn-secondary">Update</button>
+					            <hr>
+		</div>`
+    }
+
+    function ReadList() {
+        let url = 'http://127.0.0.1:8000/api/v1/products/'
+        let wrapper = document.getElementById("list-wrapper")
+        wrapper.innerHTML = ''
+        $.ajax({
+            url: url,
+            method: "GET",
+            success: function (data) {
+                let list = data
+                for (let i in list.reverse()) {
+                    let name = ``
+                    let price = ``
+                    let description = ``
+
+                    wrapper.innerHTML += gen_element(list[i].id, list[i].name, list[i].price, list[i].description)
+                }
+            },
+            error: function (date) {
+
+            },
+        })
+    }
+
+</script>
+</body>
+</html>
