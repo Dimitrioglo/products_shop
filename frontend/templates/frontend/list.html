@@ -23,6 +23,9 @@
         </div><br>
         <label for="description">Enter product description:</label><br>
         <textarea id="description" class="form-control" placeholder="Enter text here..."></textarea><br>
+        <div class="new-fields form-inline">
+        </div>
+        <button type="button" class="btn btn-info">Add column</button><br><br>
         <input type="submit" value="Submit" class="btn btn-primary">
         <button type="button" class="btn btn-warning">Clear</button>
     </form>
@@ -56,6 +59,17 @@
         return cookieValue;
     }
 
+    // adding new fields
+    var i = 0
+    $(document).on('click', '.btn-info', function (e) {
+        let form = $(this).parent().find('.new-fields')
+        i++
+        let new_div =
+            `<input type="text" id="field-key-${i}" name=field-key-${i}" class="form-control col-md-6">
+             <input type="text" id="field-value-${i}" name="field-value-${i}" class="form-control col-md-6"><br><br>`
+        form.html(form.html() + new_div)
+    })
+
 
     $(document).on('click', '.btn-warning', function (e) {
         $(this).parent()[0].reset()
@@ -83,7 +97,7 @@
 
     $(document).on('click', '.btn-danger', function (e) {
         let id_ = $(this).parent().data('id')
-        let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
+        let url = 'http://127.0.0.1:8000/api/v1/product/' + id_ + '/';
         $.ajax({
             url: url,
             method: "DELETE",
@@ -96,6 +110,7 @@
         })
     });
 
+    // submit
     $(document).on('submit', '#form-wrapper', function (e) {
         e.preventDefault();
         let form = $(this)
@@ -104,8 +119,15 @@
         let description = form.find('#description').val()
         let url = form.attr('action');
         let method = form.attr('method')
-        let id_ = form.find('#element-id').val()
         let calc_percentage = $('#calc-percentage').is(':checked');
+        let new_fields_count = form.find('.new-fields').children('input').length / 2
+        let field = form.find('.new-fields')
+        {#console.log('start:' field.field-key)#}
+        let all_specifications = []
+        for (let field_number=1; field_number < new_fields_count; field_number++){
+            all_specifications.push(field.find('#field-key-' + field_number).val())
+        }
+        console.log('fields values:', all_specifications)
 
         $.ajax({
             url: url,
@@ -113,12 +135,21 @@
             headers: {
                 'X-CSRFToken': getCookie('csrftoken'),
             },
-            data: {
-                name: name,
-                price: lprice,
-                description: description,
-                calc_percentage: calc_percentage,
-            },
+            dataType: "json",
+            processData: false,
+            contentType: "application/json",
+            data: JSON.stringify({
+                    "name": name,
+                    "price":parseInt(lprice),
+                    "description": description,
+                    "calc_percentage": calc_percentage,
+                    "specification_product": [
+                        {
+                            "key": "spec1",
+                            "value": "we"
+                        }
+                    ]
+            }),
             success: function (data) {
                 let elem = $('#data-row-' + data.id)
                 elem.remove()
@@ -126,6 +157,7 @@
                 let new_div = gen_element(data.id, data.name, data.price, data.description)
                 wrapper.html(new_div + wrapper.html())
                 $('#form-wrapper').find('#element-id').val(data.id)
+                {#$(this).parent().find('.new-fields')[0].reset()#}
             }
         })
     });

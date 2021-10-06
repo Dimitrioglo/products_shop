@@ -12,7 +12,6 @@ media
 # If you are using PyCharm #
 .idea/**
 
-
 # Python #
 *.py[cod]
 *$py.class

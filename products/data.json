@@ -1,0 +1,22 @@
+{
+    "name": "dimitrioglo",
+    "price": 111,
+    "description": "dfdffdfd",
+    "specification_product": [
+        {
+            "key": "spec1",
+            "value": "we"
+        }
+    ]
+}
+
+
+some <QueryDict: {'name': ['game'], 'price': ['100'], 'description': ['fgfg'], 'calc_percentage': ['false'], 'specification_product': [[{'key': 'spec1', 'value': 'we'}]]}>
+some {'name': 'dimitrioglo', 'price': 111, 'description': 'dfdffdfd', 'specification_product': [{'key': 'spec1', 'value': 'we'}]}
+
+data: {
+                name: name,
+                price: lprice,
+                description: description,
+                calc_percentage: calc_percentage,
+            },
