@@ -5,6 +5,8 @@
     <title>Home Products</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp"
+      rel="stylesheet">
 </head>
 <body>
 
@@ -16,18 +18,19 @@
         <label for="lprice">Enter product price:</label>
         <input type="text" id="lprice" name="lprice" class="form-control col-sm-2">
         <div class="form-check">
-          <input class="form-check-input" type="checkbox" value="" id="calc-percentage">
-          <label class="form-check-label" for="calc-percentage">
-            calculate %
-          </label>
-        </div><br>
+            <input class="form-check-input" type="checkbox" value="" id="calc-percentage">
+            <label class="form-check-label" for="calc-percentage">
+                calculate %
+            </label>
+        </div>
+        <br>
         <label for="description">Enter product description:</label><br>
         <textarea id="description" class="form-control" placeholder="Enter text here..."></textarea><br>
-        <div class="new-fields form-inline">
-        </div>
-        <button type="button" class="btn btn-info">Add column</button><br><br>
+        <div class="new-fields"></div>
+        <button type="button" class="btn btn-info add-button">Add specification</button>
+        <br><br>
         <input type="submit" value="Submit" class="btn btn-primary">
-        <button type="button" class="btn btn-warning">Clear</button>
+        <button type="button" class="btn btn-warning clear-button">Clear</button>
     </form>
     <br>
     <h2 class="text-left">List of products:</h2>
@@ -59,31 +62,39 @@
         return cookieValue;
     }
 
-    // adding new fields
-    var i = 0
-    $(document).on('click', '.btn-info', function (e) {
-        let form = $(this).parent().find('.new-fields')
-        i++
-        let new_div =
-            `<input type="text" id="field-key-${i}" name=field-key-${i}" class="form-control col-md-6">
-             <input type="text" id="field-value-${i}" name="field-value-${i}" class="form-control col-md-6"><br><br>`
-        form.html(form.html() + new_div)
-    })
 
-
-    $(document).on('click', '.btn-warning', function (e) {
+    $(document).on('click', '.clear-button', function (e) {
         $(this).parent()[0].reset()
         $(this).parent().find('[type="hidden"]').val('')
+        $(this).parent().find(".new-fields").children().remove();
         $('#form-wrapper').attr('action', $('#form-wrapper').attr('base_url'))
         $('#form-wrapper').attr('method', 'POST')
     })
 
+    let field_num = 0
+    $(document).on('click', '.add-button', function (e) {
+        let form = $(this).parent().find('.new-fields')
+        field_num++
+        let new_div = generate_specifications(field_num, "", "")
+        form.append(new_div)
+    })
 
-    $(document).on('click', '.btn-secondary', function (e) {
+
+    $(document).on('click', '.update-button', function (e) {
         let id_ = $(this).parent().data('id')
         let name = $(this).parent().find('.list-name').text()
         let price = $(this).parent().find('.list-price').text()
         let description = $(this).parent().find('.list-description').text()
+
+        let new_specs = ''
+        $(this).parent().find('.list-specificaton').each(function () {
+            let spec_key_value = $(this).text().split(':')
+            let specification_id = $(this).attr('id')
+            new_specs += generate_specifications(specification_id, spec_key_value[0].trim(), spec_key_value[1].trim())
+        })
+        let new_specifications = $('#form-wrapper .new-fields')
+        new_specifications.children().remove();
+        new_specifications.append(new_specs)
 
         let form = $('#form-wrapper')
         form.attr('method', 'PUT')
@@ -92,12 +103,42 @@
         form.find('#element-id').val(id_)
         form.find('#lprice').val(price)
         form.find('#description').val(description)
+
         window.scrollTo(0, 0);
     });
 
-    $(document).on('click', '.btn-danger', function (e) {
+
+    function generate_specifications(ind, key, value) {
+        return `<div class="form-group-key-value form-inline">
+                <input type="text" id="${ind}" name="field-key" class="form-control col-md-6" value="${key}">
+                <input type="text" id="${ind}" name="field-value" class="form-control col-md-6" value="${value}"><br><br>
+             </div>`
+    }
+
+
+    $(document).on('click', '.delete-specification', function (e) {
+        let id_ = $(this).data('id')
+        let url = 'http://127.0.0.1:8000/api/v1/product/specification/' + id_ + '/';
+        var this_ = $(this)
+        $.ajax({
+            url:url,
+            method: "DELETE",
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            success: function () {
+                console.log('id of delete elem:', id_)
+                console.log('what i wanna delete:', this_.parent().find(`[id=${id_}]`))
+                this_.parent().find(`[id=${id_}]`).remove()
+                this_.remove()
+            }
+        })
+    })
+
+
+    $(document).on('click', '.delete-button', function (e) {
         let id_ = $(this).parent().data('id')
-        let url = 'http://127.0.0.1:8000/api/v1/product/' + id_ + '/';
+        let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
         $.ajax({
             url: url,
             method: "DELETE",
@@ -105,12 +146,14 @@
                 'X-CSRFToken': getCookie('csrftoken'),
             },
             success: function (data) {
+                $('#form-wrapper')[0].reset()
+                $('#form-wrapper .new-fields').children().remove();
                 ReadList()
             }
         })
     });
 
-    // submit
+
     $(document).on('submit', '#form-wrapper', function (e) {
         e.preventDefault();
         let form = $(this)
@@ -120,14 +163,18 @@
         let url = form.attr('action');
         let method = form.attr('method')
         let calc_percentage = $('#calc-percentage').is(':checked');
-        let new_fields_count = form.find('.new-fields').children('input').length / 2
-        let field = form.find('.new-fields')
-        {#console.log('start:' field.field-key)#}
+
         let all_specifications = []
-        for (let field_number=1; field_number < new_fields_count; field_number++){
-            all_specifications.push(field.find('#field-key-' + field_number).val())
-        }
-        console.log('fields values:', all_specifications)
+        $('.form-group-key-value').each(function () {
+            let key = $(this).find('input[name="field-key"]').val()
+            let value = $(this).find('input[name="field-value"]').val()
+            let id = $(this).children().attr('id')
+            all_specifications.push({
+                "id": id,
+                "key": key,
+                "value": value
+            })
+        });
 
         $.ajax({
             url: url,
@@ -139,39 +186,40 @@
             processData: false,
             contentType: "application/json",
             data: JSON.stringify({
-                    "name": name,
-                    "price":parseInt(lprice),
-                    "description": description,
-                    "calc_percentage": calc_percentage,
-                    "specification_product": [
-                        {
-                            "key": "spec1",
-                            "value": "we"
-                        }
-                    ]
+                "name": name,
+                "price": parseInt(lprice),
+                "description": description,
+                "calc_percentage": calc_percentage,
+                "specification_product": all_specifications
             }),
             success: function (data) {
                 let elem = $('#data-row-' + data.id)
                 elem.remove()
                 let wrapper = $('#list-wrapper')
-                let new_div = gen_element(data.id, data.name, data.price, data.description)
+                let new_div = gen_element(data.id, data.name, data.price, data.description, data.specification_product)
                 wrapper.html(new_div + wrapper.html())
                 $('#form-wrapper').find('#element-id').val(data.id)
-                {#$(this).parent().find('.new-fields')[0].reset()#}
             }
         })
     });
-
     ReadList()
 
-    function gen_element(id, name, price, description) {
+    function gen_element(id, name, price, description, specifications) {
+
+        let specifications_list = ''
+        $.each(specifications, function (id, obj) {
+            specifications_list += `
+                    <span id="${obj.id}" class="list-specificaton" >${obj.key} : ${obj.value}</span>
+                    <button type="button" class="btn btn-outline-danger material-icons-outlined btn-sm delete-specification" data-id=${obj.id}>delete</button>`
+        });
+
         return `<div id="data-row-${id}" data-id="${id}">
 								<span class="list-name">${name}</span><br>
 								Price: <span class="list-price">${price}</span><br>
 								Description: <span class="list-description">${description}</span><br>
-								<button type="button" class="btn btn-danger">Delete</button>
-								<button type="button" class="btn btn-secondary">Update</button>
-					            <hr>
+                                ${specifications_list}<br>
+								<button type="button" class="btn btn-danger delete-button">Delete</button>
+								<button type="button" class="btn btn-secondary update-button">Update</button><hr>
 		</div>`
     }
 
@@ -185,16 +233,9 @@
             success: function (data) {
                 let list = data
                 for (let i in list.reverse()) {
-                    let name = ``
-                    let price = ``
-                    let description = ``
-
-                    wrapper.innerHTML += gen_element(list[i].id, list[i].name, list[i].price, list[i].description)
+                    wrapper.innerHTML += gen_element(list[i].id, list[i].name, list[i].price, list[i].description, list[i].specification_product)
                 }
-            },
-            error: function (date) {
-
-            },
+            }
         })
     }
 

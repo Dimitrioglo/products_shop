@@ -45,7 +45,6 @@ def products_detail(request, pk):
         return Response(serializer.data)
 
     elif request.method == 'PUT':
-        # request.data._mutable = True
         processed_data = request.data
         price = Decimal(processed_data['price']).quantize(Decimal('.01'), rounding=ROUND_UP)
         if processed_data["calc_percentage"] == 'true':
