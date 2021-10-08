@@ -16,6 +16,7 @@ class ProductSerializer(WritableNestedModelSerializer, serializers.ModelSerializ
         model = Product
         fields = [
             'id',
+            'user',
             'name',
             'price',
             'description',
