@@ -10,13 +10,15 @@
 </head>
 
 <style>
-    table{
+    table {
         width: 100%;
     }
-    th{
+
+    th {
         width: 25%;
     }
-    tr{
+
+    tr {
         width: 100%;
     }
 
@@ -27,7 +29,7 @@
 
 <div class="container">
     <form action="{% url 'products-api' %}" base_url="{% url 'products-api' %}" id="form-wrapper" method="POST">
-        <input type="hidden" id="element-id" name="element-id" class="form-control col-sm-2"><br>
+        <input type="hidden" id="element-id" name="element-id" class="form-control col-sm-2" value=""><br>
         <label for="fname">Enter product name:</label>
         <input type="text" id="fname" name="fname" class="form-control col-sm-2"><br>
         <label for="lprice">Enter product price:</label>
@@ -49,8 +51,9 @@
     </form>
     <br>
     <h2 class="text-center">List of products:</h2>
-    <div id="list-wrapper">
-    </div>
+    <table>
+        <tbody id="list-wrapper"></tbody>
+    </table>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
         integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ=="
@@ -95,7 +98,7 @@
 
 
     $(document).on('click', '.update-button', function (e) {
-        let id_ = $(this).parent().parent().attr('id')
+        let id_ = $(this).parent().attr('id')
         let name = $(this).parent().parent().find('.list-name').text()
         let price = $(this).parent().parent().find('.list-price').text()
         let description = $(this).parent().parent().find('.list-description').text()
@@ -132,9 +135,13 @@
     }
 
 
-        $(document).on('click', '.delete-button', function (e) {
-        let id_ = $(this).parent().parent().attr('id')
+    $(document).on('click', '.delete-button', function (e) {
+        let id_ = $(this).parent().attr('id')
+
+        console.log('id:', id_)
         let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
+        $('#list-wrapper').find('.data-row-'+ id_).remove()
+
         $.ajax({
             url: url,
             method: "DELETE",
@@ -144,11 +151,13 @@
             success: function (data) {
                 $('#form-wrapper')[0].reset()
                 $('#form-wrapper .new-fields').children().remove();
-                $('#list-wrapper').find('#data-row-' + id_).remove()
             }
         })
     });
 
+    function delete_product_from_list(product_id) {
+
+    }
 
     $(document).on('click', '.delete-specification', function (e) {
         let id_ = $(this).data('id')
@@ -184,12 +193,15 @@
             let key = $(this).find('input[name="field-key"]').val()
             let value = $(this).find('input[name="field-value"]').val()
             let id = $(this).children().attr('id')
+
             all_specifications.push({
                 "id": id,
                 "key": key,
                 "value": value
             })
         });
+
+        let id_product = $('#form-wrapper').find('#element-id').val()
 
         $.ajax({
             url: url,
@@ -201,6 +213,7 @@
             processData: false,
             contentType: "application/json",
             data: JSON.stringify({
+                "id": id_product,
                 "name": name,
                 "price": parseInt(lprice),
                 "description": description,
@@ -208,12 +221,15 @@
                 "specification_product": all_specifications
             }),
             success: function (data) {
-                let elem = $('#data-row-' + data.id)
-                elem.remove()
                 let wrapper = $('#list-wrapper')
+                let elem = $('.data-row-' + data.id)
+                elem.remove()
                 let new_div = gen_element(data.id, data.name, data.price, data.description, data.specification_product)
                 wrapper.html(new_div + wrapper.html())
+
                 $('#form-wrapper').find('#element-id').val(data.id)
+                form.attr('method', 'PUT')
+                form.attr('action', form.attr('base_url') + data.id + '/')
             }
         })
     });
@@ -223,7 +239,7 @@
 
         let specifications_list = ''
         $.each(specifications, function (id, obj) {
-            specifications_list += `<tr>
+            specifications_list += `<tr class="data-row-${id_product}" >
                 <td colspan="3" id="${obj.id}" class="list-product_specif-${id_product}"">
                         <span class="list-specificaton-key" >${obj.key}</span>
                         <span class="list-specificaton-value" >${obj.value}</span>
@@ -234,33 +250,27 @@
             </tr>`
         });
 
-        return `<div id="data-row-${id_product}" data-id="${id_product}">
-            <table>
-                <tr>
+        return `<tr class="data-row-${id_product}" data-id="${id_product}">
                     <th>Name</th>
                     <th>Price</th>
                     <th>Description</th>
                     <th>Action</th>
                 </tr>
-                <tr id=${id_product}>
+                <tr class="data-row-${id_product}" ">
                     <td class="list-name" >${name}</td>
                     <td class="list-price" >${price}</td>
                     <td class="list-description">${description}</td>
-                    <td>
+                    <td class="data-row-${id_product}" id="${id_product}">
                         <button type="button" class="btn btn-danger delete-button">Delete</button>
                         <button type="button" class="btn btn-secondary update-button">Update</button>
                     </td>
                 </tr>
-                <hr>
-                    ${specifications_list}
-            </table>
-        </div>`
-
+                    ${specifications_list}`
     }
 
     function ReadList() {
         let url = 'http://127.0.0.1:8000/api/v1/products/'
-        let wrapper = document.getElementById("list-wrapper")
+        let wrapper = $("#list-wrapper")[0]
         wrapper.innerHTML = ''
         $.ajax({
             url: url,
