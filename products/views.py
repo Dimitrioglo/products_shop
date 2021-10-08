@@ -18,6 +18,7 @@ def products_list(request):
 
     elif request.method == 'POST':
         processed_data = request.data
+        processed_data['user'] = str(request.user.id)
         price = Decimal(processed_data['price']).quantize(Decimal('.01'), rounding=ROUND_UP)
 
         if processed_data.get("calc_percentage", False):

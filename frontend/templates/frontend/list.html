@@ -140,7 +140,7 @@
 
         console.log('id:', id_)
         let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
-        $('#list-wrapper').find('.data-row-'+ id_).remove()
+        $('#list-wrapper').find('.data-row-' + id_).remove()
 
         $.ajax({
             url: url,
@@ -224,7 +224,7 @@
                 let wrapper = $('#list-wrapper')
                 let elem = $('.data-row-' + data.id)
                 elem.remove()
-                let new_div = gen_element(data.id, data.name, data.price, data.description, data.specification_product)
+                let new_div = gen_element(data.id, data.user, data.name, data.price, data.description, data.specification_product)
                 wrapper.html(new_div + wrapper.html())
 
                 $('#form-wrapper').find('#element-id').val(data.id)
@@ -235,7 +235,7 @@
     });
     ReadList()
 
-    function gen_element(id_product, name, price, description, specifications) {
+    function gen_element(id_product, user, name, price, description, specifications) {
 
         let specifications_list = ''
         $.each(specifications, function (id, obj) {
@@ -256,7 +256,8 @@
                     <th>Description</th>
                     <th>Action</th>
                 </tr>
-                <tr class="data-row-${id_product}" ">
+                <tr class="data-row-${id_product}" >
+                    <td class="list-user" >${user}</td>
                     <td class="list-name" >${name}</td>
                     <td class="list-price" >${price}</td>
                     <td class="list-description">${description}</td>
