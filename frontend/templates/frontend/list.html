@@ -6,8 +6,23 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
           integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Icons+Two+Tone|Material+Icons+Round|Material+Icons+Sharp"
-      rel="stylesheet">
+          rel="stylesheet">
 </head>
+
+<style>
+    table{
+        width: 100%;
+    }
+    th{
+        width: 25%;
+    }
+    tr{
+        width: 100%;
+    }
+
+</style>
+
+
 <body>
 
 <div class="container">
@@ -33,9 +48,8 @@
         <button type="button" class="btn btn-warning clear-button">Clear</button>
     </form>
     <br>
-    <h2 class="text-left">List of products:</h2>
+    <h2 class="text-center">List of products:</h2>
     <div id="list-wrapper">
-
     </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"
@@ -81,16 +95,18 @@
 
 
     $(document).on('click', '.update-button', function (e) {
-        let id_ = $(this).parent().data('id')
-        let name = $(this).parent().find('.list-name').text()
-        let price = $(this).parent().find('.list-price').text()
-        let description = $(this).parent().find('.list-description').text()
+        let id_ = $(this).parent().parent().attr('id')
+        let name = $(this).parent().parent().find('.list-name').text()
+        let price = $(this).parent().parent().find('.list-price').text()
+        let description = $(this).parent().parent().find('.list-description').text()
+        let product = $(this).closest('table').find('.list-product_specif-' + id_)
 
         let new_specs = ''
-        $(this).parent().find('.list-specificaton').each(function () {
-            let spec_key_value = $(this).text().split(':')
+        product.each(function (index) {
+            let spec_key = $(this).find('.list-specificaton-key').text()
+            let spec_value = $(this).find('.list-specificaton-value').text()
             let specification_id = $(this).attr('id')
-            new_specs += generate_specifications(specification_id, spec_key_value[0].trim(), spec_key_value[1].trim())
+            new_specs += generate_specifications(specification_id, spec_key, spec_value)
         })
         let new_specifications = $('#form-wrapper .new-fields')
         new_specifications.children().remove();
@@ -111,33 +127,13 @@
     function generate_specifications(ind, key, value) {
         return `<div class="form-group-key-value form-inline">
                 <input type="text" id="${ind}" name="field-key" class="form-control col-md-6" value="${key}">
-                <input type="text" id="${ind}" name="field-value" class="form-control col-md-6" value="${value}"><br><br>
+                <input type="text" id="${ind}" name="field-value" class="form-control col-md-6" value="${value}"><br/><br/>
              </div>`
     }
 
 
-    $(document).on('click', '.delete-specification', function (e) {
-        let id_ = $(this).data('id')
-        let url = 'http://127.0.0.1:8000/api/v1/product/specification/' + id_ + '/';
-        var this_ = $(this)
-        $.ajax({
-            url:url,
-            method: "DELETE",
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-            },
-            success: function () {
-                console.log('id of delete elem:', id_)
-                console.log('what i wanna delete:', this_.parent().find(`[id=${id_}]`))
-                this_.parent().find(`[id=${id_}]`).remove()
-                this_.remove()
-            }
-        })
-    })
-
-
-    $(document).on('click', '.delete-button', function (e) {
-        let id_ = $(this).parent().data('id')
+        $(document).on('click', '.delete-button', function (e) {
+        let id_ = $(this).parent().parent().attr('id')
         let url = 'http://127.0.0.1:8000/api/v1/products/' + id_ + '/';
         $.ajax({
             url: url,
@@ -148,10 +144,29 @@
             success: function (data) {
                 $('#form-wrapper')[0].reset()
                 $('#form-wrapper .new-fields').children().remove();
-                ReadList()
+                $('#list-wrapper').find('#data-row-' + id_).remove()
             }
         })
     });
+
+
+    $(document).on('click', '.delete-specification', function (e) {
+        let id_ = $(this).data('id')
+        let url = 'http://127.0.0.1:8000/api/v1/product/specification/' + id_ + '/';
+        var this_ = $(this)
+        $.ajax({
+            url: url,
+            method: "DELETE",
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            success: function () {
+                this_.parent().parent().find('.list-specificaton-key').remove()
+                this_.parent().parent().find('.list-specificaton-value').remove()
+                this_.remove()
+            }
+        })
+    })
 
 
     $(document).on('submit', '#form-wrapper', function (e) {
@@ -204,23 +219,43 @@
     });
     ReadList()
 
-    function gen_element(id, name, price, description, specifications) {
+    function gen_element(id_product, name, price, description, specifications) {
 
         let specifications_list = ''
         $.each(specifications, function (id, obj) {
-            specifications_list += `
-                    <span id="${obj.id}" class="list-specificaton" >${obj.key} : ${obj.value}</span>
-                    <button type="button" class="btn btn-outline-danger material-icons-outlined btn-sm delete-specification" data-id=${obj.id}>delete</button>`
+            specifications_list += `<tr>
+                <td colspan="3" id="${obj.id}" class="list-product_specif-${id_product}"">
+                        <span class="list-specificaton-key" >${obj.key}</span>
+                        <span class="list-specificaton-value" >${obj.value}</span>
+                </td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger material-icons-outlined btn-sm delete-specification" data-id=${obj.id}>delete</button>
+                </td>
+            </tr>`
         });
 
-        return `<div id="data-row-${id}" data-id="${id}">
-								<span class="list-name">${name}</span><br>
-								Price: <span class="list-price">${price}</span><br>
-								Description: <span class="list-description">${description}</span><br>
-                                ${specifications_list}<br>
-								<button type="button" class="btn btn-danger delete-button">Delete</button>
-								<button type="button" class="btn btn-secondary update-button">Update</button><hr>
-		</div>`
+        return `<div id="data-row-${id_product}" data-id="${id_product}">
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Description</th>
+                    <th>Action</th>
+                </tr>
+                <tr id=${id_product}>
+                    <td class="list-name" >${name}</td>
+                    <td class="list-price" >${price}</td>
+                    <td class="list-description">${description}</td>
+                    <td>
+                        <button type="button" class="btn btn-danger delete-button">Delete</button>
+                        <button type="button" class="btn btn-secondary update-button">Update</button>
+                    </td>
+                </tr>
+                <hr>
+                    ${specifications_list}
+            </table>
+        </div>`
+
     }
 
     function ReadList() {
